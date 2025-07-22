@@ -1,0 +1,133 @@
+.chat-container {
+  /* width: 100%; */
+  /* margin: 60px auto; */
+  font-family: Arial;
+  text-align: center;
+  display: flex;
+}
+
+.chat-bot {
+  border: 1px solid #ccc;
+  max-height: 520px;
+  overflow-y: auto;
+  padding: 10px;
+  text-align: left;
+  background: #f9f9f9;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: max-height 0.2s ease;
+}
+
+.chat-message {
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  max-width: 95%
+}
+
+.chat-message.user {
+  background-color: #9dc6f6;
+  align-self: flex-end;
+  text-align: right;
+  margin-left:auto;
+}
+
+.chat-message.bot {
+  background-color: #e8e8e8;
+  text-align: left;
+  margin-right: auto;
+}
+
+.input-area {
+  display: flex; /* align in row and  "display: grid;" align in column */
+  width: 97%;
+  padding: 10px;
+}
+
+.input-area input {
+  flex-grow: 1;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+  font-size: 16px;
+  margin-right: 10px;
+  outline: none;
+
+}
+
+.input-area button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 15px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+.input-area button:hover {
+    background-color: #0056b3;
+}
+
+.refresh-button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+}
+
+
+.loading-indication {
+  margin-top: 10px;
+  color: gray;
+  font-style: italic;
+}
+
+.side-bar{
+  border-right: 10px solid black;
+  width: 18%;
+  padding: 2rem;
+  overflow-y: auto;
+  background-color: #e8e8e8;
+  height: 670px;
+  
+}
+
+.newChat{
+  float: left;
+  margin: 10px;
+  border: none;
+  background-color: #e8e8e8;
+  padding: 10;
+  font-size: 25px;
+
+}
+
+.main{
+  width: 82%;
+}
+
+.session{
+  list-style: none;
+  padding: 0;
+}
+
+/* .sideHeading{
+  float: left;
+  margin: 10px;
+} */
+
+.list{
+  cursor: pointer;
+  float: left;
+  margin: 10px;
+}
+
+.deleteButton{
+  cursor: pointer;
+  border: none;
+  background-color: #e8e8e8;
+}
