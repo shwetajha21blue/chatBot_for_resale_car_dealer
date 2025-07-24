@@ -22,6 +22,13 @@ export default function App() {
     setMessages(newMessages);
     setLoading(true); // Show loading
     setInput('');
+
+    if (messages.length === 0){
+      setSessionSummaries((prev) => ({
+        ...prev,
+        [sessionId]: input.slice(0,20)
+      }));
+    }
     
     try{
       const response = await axios.post('http://127.0.0.1:8000/chat', {
@@ -79,17 +86,17 @@ export default function App() {
       const response = await axios.get(`http://127.0.0.1:8000/get_messages?session_id=${id}`);
       const data = response.data
       setMessages(data)
-      if (data.length > 0) {
-        setSessionSummaries((prev) => ({
-          ...prev,
-          [id]: data[0].text.slice(0, 20)
-        }));
-      } else {
-        setSessionSummaries((prev) => ({
-          ...prev,
-          [id]: "New Chat"
-        }));
-      }
+      // if (data.length > 0) {
+      //   setSessionSummaries((prev) => ({
+      //     ...prev,
+      //     [id]: data[0].text.slice(0, 20)
+      //   }));
+      // } else {
+      //   setSessionSummaries((prev) => ({
+      //     ...prev,
+      //     [id]: "New Chat "
+      //   }));
+      // }
     } catch (error) {
     if (error.response && error.response.status === 404) {
       setMessages([]);
@@ -114,7 +121,7 @@ export default function App() {
       setSessions((prev) => [newSessionId, ...prev]);
       setSessionSummaries((prev) => ({
         ...prev,
-        [newSessionId]: "New Chat"
+        [newSessionId]: "New Chat "
       }));
     } catch (error) {
       console.error("Failed to create new chat:", error)
@@ -128,11 +135,11 @@ export default function App() {
 
 
 useEffect(() => {
-  let hasInitialized = false;
+  // let hasInitialized = false;
 
   const createInitialSession = async () => {
-    if (hasInitialized) return;
-    hasInitialized = true;
+    // if (hasInitialized) return;
+    // hasInitialized = true;
 
     try {
       const response = await axios.post("http://127.0.0.1:8000/new_chat");
@@ -155,7 +162,7 @@ useEffect(() => {
       <div className="side-bar">
         <div>
         {/* <strong className='sideHeading' >Chat History</strong> */}
-          <button className='newChat' onClick={handleNewChat}>💬 New chat</button>
+          <button className='newChat' onClick={handleNewChat}>💬 New Chat</button>
         </div>
         <ul className='session'>
           {sessions.map((id) => (
@@ -165,8 +172,9 @@ useEffect(() => {
               <div onClick={() => handleSelectSession(id)}>
                 {/* {id} {id === sessionId && <strong>(active)</strong>} */}
                   {/* {messages.length > 0 && id === sessionId ? messages[0].text.slice(0, 20) : id}/ */}
-                  {sessionSummaries[id] || "New Chat "}
-                  {id === sessionId && <strong> (Active) </strong> } 
+                  
+                  {id === sessionId && <strong> 🔵 </strong> } 
+                  {sessionSummaries[id]  || "New Chat "}
                 <button className='deleteButton' onClick={(e) => {
                     e.stopPropagation();
                     handleDeleteSession(id);
@@ -178,7 +186,7 @@ useEffect(() => {
         </ul>
       </div>
       <div className='main'>
-      <h2>🧠 ChatBot</h2>
+      <h2 className='chatBot-heading'>🧠 ChatBot</h2>
       {messages.length > 0 && (
         <>
         <div className='chat-bot'>
@@ -198,8 +206,8 @@ useEffect(() => {
           <p>Loading...</p>
         </div>
       )}
-        <div className='refresh-button'>
-          <button onClick={handleRefresh}>Clear</button>
+        <div className='refresh'>
+          <button className='refresh-button' onClick={handleRefresh}>Clear</button>
         </div>
       </div> 
       </>
