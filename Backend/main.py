@@ -70,6 +70,7 @@ if not embedding_model:
     exit(1)
 
 qdrant_url = os.getenv("qdrant_url")
+print(qdrant_url,"qdrant url")
 if not qdrant_url:
     print("qdrant_url not found in .env file. Please set it.")
     exit(1)
