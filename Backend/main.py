@@ -75,6 +75,8 @@ if not qdrant_url:
     exit(1)
 
 
+
+
 # Hashing the file
 def get_file_hash(file_path):
     with open(file_path, "rb") as f:
@@ -100,23 +102,55 @@ def store_embedding(qdrant, vector, file_hash, filename, collection_name=collect
 def has_embeddings_qdrant():
     # Check if the Qdrant collection has any points
     qdrant_client = QdrantClient(
+        # url="http://qdrant-custom.onrender.com:6333",
         url=qdrant_url,
         prefer_grpc=False,
+        https=True,
+        timeout=60,
+        port=None,
+        check_compatibility=False
     )
+
+    #print(qdrant_client.collection_exists("car_details"))
+
     try:
         result, _= qdrant_client.scroll(
             collection_name=collection_name,
             limit=1
         )
+        # print(result)
         return len(result) > 0 if result else False
     except Exception as e:
         print(f"Error checking Qdrant collection: {e}")
         return False
     
 
+# import time
+
+# def wait_for_qdrant_ready(retries=5, delay=3):
+#     for i in range(retries):
+#         try:
+#             client = QdrantClient(url=qdrant_url, prefer_grpc=False)
+#             collections = client.get_collections()
+#             print("✅ Qdrant collections found:", collections)
+#             return True
+#         except Exception as e:
+#             print(f"⏳ Waiting for Qdrant... retry {i+1}/{retries}")
+#             time.sleep(delay)
+#     raise RuntimeError("❌ Qdrant is not responding.")
+
+# wait_for_qdrant_ready()
+
+
+
 # Collecting all the embedding file name list
 def list_embedded_files(collection_name):
-    client = QdrantClient(host="localhost", port=6333)
+    client = QdrantClient(
+        # host="localhost",
+        # port=6333,
+        url=qdrant_url,
+        port=None,
+        https=True,)
     result, _ = client.scroll(
         collection_name=collection_name,
         limit=100,
@@ -161,11 +195,15 @@ def embedding_documents(output_folder, collection_name=collection_name, embeddin
     qdrant_client = QdrantClient(
         url=qdrant_url,
         prefer_grpc=False,
+        timeout=60,
+        https=True,
+        port=None
     ) 
 
     qdrant=None
     try:
         existing_collections = qdrant_client.get_collections().collections
+        print(existing_collections,"hello")
         if collection_name not in [col.name for col in existing_collections]:
             qdrant_client.recreate_collection(
                 collection_name=collection_name,
@@ -278,7 +316,7 @@ def build_qa_chain(qdrant, groq_api_key=groq_api_key, llm_model=llm_model):
             1. Brand (e.g., Maruti, Hyundai)
             2. Model
             3. Registration Year
-            3. Price or price range (e.g., 2 to 5 lakhs)
+            3. Price or price range (e.g., 2 to 5 lakhs) with unit
             4. Number of seats (e.g., 7 seats, 5-seater)
             5. Year of make (e.g., after 2020, between 2018 and 2023)
             6. Fuel type (petrol, diesel, electric, etc.)
@@ -447,6 +485,4 @@ async def new_chat():
 # npx create-react-app my-react-app
 # cd my-react-app
 # npm start 
-
-
 
