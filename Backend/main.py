@@ -373,6 +373,7 @@ qdrant = None
 @app.on_event("startup")
 async def initialize_qa_chain():
     global qa_chain, qdrant
+    await new_chat()
     if has_embeddings_qdrant():
         qdrant = embedding_documents(output_folder, collection_name)
         qa_chain = build_qa_chain(qdrant)
