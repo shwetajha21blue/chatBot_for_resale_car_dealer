@@ -1,33 +1,30 @@
 .chat-container {
-  /* width: 100%; */
-  /* margin: 60px auto; */
-  font-family: Arial;
-  text-align: center;
+  font-family: Arial, sans-serif;
   display: flex;
+  height: 100vh;
 }
 
 .chat-bot {
-  /* border: 1px solid #ccc; */
-  max-height: 520px;
-  overflow-y: auto;
+  height: calc(100vh - 150px);
   padding: 10px;
   text-align: left;
-  /* background: #f9f9f9; */
   margin-bottom: 10px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  transition: max-height 0.2s ease;
+  overflow-y: auto;
 }
 
-.chatBot-heading{
+.chatBot-heading {
   border-bottom: 1px solid rgb(216, 211, 211);
+  padding: 15px;
+  margin: 0;
 }
 
 .chat-message {
   padding: 10px;
   margin-bottom: 8px;
-  border-radius: 4px;
+  border-radius: 20px;
   max-width: 95%
 }
 
@@ -40,49 +37,62 @@
 
 .chat-message.bot {
   background-color: #e8e8e8;
-  align-self: flex-end;
+  align-self: flex-start;
   text-align: left;
   margin-right: auto;
 }
 
+.message-bubble {
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 15px;
+  line-height: 1.4;
+  background: #f0f0f0;
+  white-space: pre-wrap;
+  max-width: 100%;
+}
+
 .input-area {
-  display: flex; /* align in row and  "display: grid;" align in column */
-  width: 97%;
+  display: flex;
+  width: 84%;
   padding: 10px;
+  position: fixed;
+  bottom: 0;
+  background: white;
+  box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
 }
 
 .input-area input {
   flex-grow: 1;
-  padding: 8px 12px;
+  padding: 12px 16px;
   border: 1px solid #ccc;
   border-radius: 20px;
   font-size: 16px;
   margin-right: 10px;
   outline: none;
-
 }
 
 .input-area button {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 20px;
-    padding: 8px 15px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.3s ease;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 12px 20px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s ease;
 }
 
 .input-area button:hover {
-    background-color: #0056b3;
+  background-color: #0056b3;
 }
 
-
-.refresh{
+.refresh {
   display: flex;
   justify-content: center;
   align-items: center;
   margin-top: 20px;
+  margin-bottom: 80px;
 }
 
 .refresh-button {
@@ -93,75 +103,226 @@
   padding: 8px 15px;
   cursor: pointer;
   font-size: 16px;
+  transition: all 0.2s;
 }
 
 .refresh-button:hover {
-    background-color: #da544b;
+  background-color: #da544b;
 }
 
-
-.loading-indication {
-  margin-top: 10px;
-  color: gray;
-  font-style: italic;
+.loading-indicator {
+  display: flex;
+  gap: 8px;
+  padding: 1rem;
+  background-color: #ffffff;
+  border-radius: 8px;
+  max-width: 800px;
+  margin: 0 auto;
+  width: fit-content;
 }
 
-.side-bar{
+.loading-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #a1a1a7;
+  animation: bounce 1.4s infinite ease-in-out both;
+}
+
+.loading-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.loading-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes bounce {
+  0%, 80%, 100% { 
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  40% { 
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.side-bar {
   border-right: 1px solid rgb(216, 211, 211);
-  width: 18%;
-  padding: 2rem;
-  overflow-y: auto;
+  width: 250px;
+  padding: 1rem;
   background-color: #f9f9f9;
-  height: 850px;
-  
+  height: 100vh;
+  overflow-y: auto;
 }
 
-.newChat{
-  float: left;
-  margin: 10px;
+.newChat {
+  margin: 10px 0;
   border: none;
   background-color: #f9f9f9;
-  padding: 10;
-  font-size: 25px;
+  padding: 10px 15px;
+  font-size: 16px;
   cursor: pointer;
+  border-radius: 8px;
+  width: 100%;
+  text-align: left;
 }
 
-.main{
-  width: 82%;
+.newChat:hover {
+  background-color: #e8e8e8;
 }
 
-.session{
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.session {
   list-style: none;
   padding: 0;
+  margin: 0;
 }
 
-/* .sideHeading{
-  float: left;
-  margin: 10px;
-} */
-
-.list{
+.list {
   cursor: pointer;
-  float: left;
-  margin: 8px;
+  margin: 8px 0;
   background-color: #e8e8e8;
-  padding: 5px;
-  border-radius: 20px;
+  padding: 10px 15px;
+  border-radius: 8px;
   width: 100%;
-
+  box-sizing: border-box;
+  transition: background-color 0.2s;
 }
 
-.deleteButton{
+.list:hover {
+  background-color: #d8d8d8;
+}
+
+.deleteButton {
   cursor: pointer;
   border: none;
   background-color: red;
   color: white;
-  border-radius: 30px; /*for round corner*/
-  padding: 3px;
+  border-radius: 30px;
+  padding: 3px 8px;
   margin-left: 7px;
   float: right;
 }
 
 .deleteButton:hover {
-    background-color: #da544b;
+  background-color: #da544b;
+}
+
+/* Welcome Screen Styles */
+.welcome-screen {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.welcome-screen h1 {
+  font-size: 2rem;
+  margin-bottom: 10px;
+}
+
+.welcome-screen p {
+  font-size: 1.2rem;
+  color: #666;
+  margin-bottom: 30px;
+}
+
+.welcome-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.welcome-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  text-align: left;
+  transition: transform 0.2s;
+}
+
+.welcome-card:hover {
+  transform: translateY(-5px);
+}
+
+.welcome-card h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.welcome-card p {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 0;
+}
+
+.upgrade-section {
+  margin-top: 40px;
+}
+
+.upgrade-card {
+  background: linear-gradient(135deg, #6e8efb, #a777e3);
+  color: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.upgrade-card h3 {
+  margin-top: 0;
+}
+
+.learn-more {
+  background: white;
+  color: #6e8efb;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 20px;
+  margin-top: 10px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.community-text {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .chat-container {
+    flex-direction: column;
+  }
+  
+  .side-bar {
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid rgb(216, 211, 211);
+  }
+  
+  .main {
+    width: 100%;
+  }
+  
+  .input-area {
+    position: static;
+    width: 100%;
+    box-shadow: none;
+    border-top: 1px solid #eee;
+  }
+  
+  .welcome-options {
+    grid-template-columns: 1fr;
+  }
 }
