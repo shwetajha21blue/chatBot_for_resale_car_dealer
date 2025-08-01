@@ -54,7 +54,7 @@
 
 .input-area {
   display: flex;
-  width: 84%;
+  width: -webkit-fill-available;
   padding: 10px;
   position: fixed;
   bottom: 0;
@@ -150,7 +150,7 @@
 
 .side-bar {
   border-right: 1px solid rgb(216, 211, 211);
-  width: 250px;
+  width: 270px;
   padding: 1rem;
   background-color: #f9f9f9;
   height: 100vh;
@@ -261,7 +261,7 @@
 }
 
 .welcome-card p {
-  color: #666;
+  color: #141414;
   font-size: 0.9rem;
   margin-bottom: 0;
 }
@@ -272,7 +272,7 @@
 
 .upgrade-card {
   background: linear-gradient(135deg, #dbe1f5, #c9bbda);
-  color: white;
+  color: #eb0909;
   border-radius: 12px;
   padding: 20px;
   margin-bottom: 20px;
@@ -294,7 +294,7 @@
 }
 
 .community-text {
-  color: #666;
+  color: #0f0f0f;
   font-size: 0.9rem;
 }
 
@@ -326,3 +326,4 @@
     grid-template-columns: 1fr;
   }
 }
+
