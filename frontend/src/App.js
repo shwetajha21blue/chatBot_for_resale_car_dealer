@@ -32,6 +32,16 @@ export default function App() {
       }));
     }
 
+    // if (messages.length === 0) {
+    //   setSessionSummaries(prev => ({
+    //     ...prev,
+    //     [sessionId]: input.length > 20 
+    //       ? `${input.substring(0, 20)}...` 
+    //       : input
+    //   }));
+    // }
+
+
     try {
       const response = await axios.post(`${BACKEND_URL}/chat`, {
         question: input,
@@ -48,25 +58,29 @@ export default function App() {
     }
   };
 
-  const handleRefresh = async () => {
-    try {
-      const response = await axios.post(`${BACKEND_URL}/refresh`, {
-        session_id: sessionId
-      });
-      console.log(response.data.message);
-      setMessages([]);
-      setSessionId(uuidv4());
-      setShowWelcome(true);
-    } catch (err) {
-      if (err.response && err.response.data.detail) {
-        console.error("Error:", err.response.data.detail);
-        alert(`Error: ${err.response.data.detail}`);
-      } else {
-        console.error("Error:", err.message);
-        alert("Something went wrong while refreshing the chat.");
-      }
-    }
-  };
+  // const handleRefresh = async () => {
+  //   try {
+  //     const response = await axios.post(`${BACKEND_URL}/refresh`, {
+  //       session_id: sessionId
+  //     });
+  //     console.log(response.data.message);
+  //     setMessages([]);
+  //     setSessionId(uuidv4());
+  //     setSessionSummaries((prev) => ({
+  //       ...prev,
+  //       [sessionId]: "New Chat "
+  //     }));
+  //     setShowWelcome(true);
+  //   } catch (err) {
+  //     if (err.response && err.response.data.detail) {
+  //       console.error("Error:", err.response.data.detail);
+  //       alert(`Error: ${err.response.data.detail}`);
+  //     } else {
+  //       console.error("Error:", err.message);
+  //       alert("Something went wrong while refreshing the chat.");
+  //     }
+  //   }
+  // };
 
   const handleDeleteSession = async (id) => {
     try {
@@ -228,11 +242,11 @@ export default function App() {
               </div>
             )}
             
-            {messages.length > 0 && (
+            {/* {messages.length > 0 && (
               <div className='refresh'>
                 <button className='refresh-button' onClick={handleRefresh}>Clear Conversation</button>
               </div>
-            )}
+            )} */}
           </div>
         )}
         
