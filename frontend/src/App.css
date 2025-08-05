@@ -278,7 +278,7 @@
   animation-delay: -0.16s;
 }
 
-.refresh {
+/* .refresh {
   display: flex;
   justify-content: center;
   margin: 20px 0;
@@ -297,7 +297,7 @@
 
 .refresh-button:hover {
   background-color: #f5f5f5;
-}
+} */
 
 @keyframes bounce {
   0%, 80%, 100% { 
