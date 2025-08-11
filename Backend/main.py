@@ -28,6 +28,15 @@ from fastapi.responses import JSONResponse
 
 from uuid import uuid4
 
+
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+from fastapi.responses import FileResponse
+
+
+
+
 app = FastAPI()
 
 app.add_middleware(
@@ -103,7 +112,6 @@ def store_embedding(qdrant, vector, file_hash, filename, collection_name=collect
 def has_embeddings_qdrant():
     # Check if the Qdrant collection has any points
     qdrant_client = QdrantClient(
-        # url="http://qdrant-custom.onrender.com:6333",
         url=qdrant_url,
         prefer_grpc=False,
         https=True,
@@ -124,23 +132,6 @@ def has_embeddings_qdrant():
     except Exception as e:
         print(f"Error checking Qdrant collection: {e}")
         return False
-    
-
-# import time
-
-# def wait_for_qdrant_ready(retries=5, delay=3):
-#     for i in range(retries):
-#         try:
-#             client = QdrantClient(url=qdrant_url, prefer_grpc=False)
-#             collections = client.get_collections()
-#             print("✅ Qdrant collections found:", collections)
-#             return True
-#         except Exception as e:
-#             print(f"⏳ Waiting for Qdrant... retry {i+1}/{retries}")
-#             time.sleep(delay)
-#     raise RuntimeError("❌ Qdrant is not responding.")
-
-# wait_for_qdrant_ready()
 
 
 
@@ -264,7 +255,6 @@ def embedding_documents(output_folder, collection_name=collection_name, embeddin
 
 
 
-
 def build_qa_chain(qdrant, groq_api_key=groq_api_key, llm_model=llm_model):
     llm = ChatGroq(
         model=llm_model,
@@ -279,13 +269,39 @@ def build_qa_chain(qdrant, groq_api_key=groq_api_key, llm_model=llm_model):
     )
 
     # These all for retriever
-    retriever_prompt = (
-        """
-            Given a chat history and the latest user question which might reference context in the chat history.
-            Formulate a standlone question which can be understood without the chat history.
-            Do not answer the question just reformulate it if needed and otherwise return it as is.
-        """
-    )
+    retriever_prompt = """
+        Given a chat history and the latest user question which might reference context in the chat history:
+        1. First understand if this is:
+        - A new car query
+        - A filter selection (color, price range, etc.)
+        - A response to our qualification question (budget, timeframe, etc.)
+        - A follow-up question about previous results
+
+        2. Formulate a standalone question that:
+        - Preserves any explicit filters mentioned ("white SUVs", "automatic transmission")
+        - Includes any active filters from the conversation
+        - Maintains the intent of the original question
+        - Can be understood without the chat history
+
+        3. For qualification questions (budget, timeframe, etc.), return them as-is since they're part of our sales process.
+
+        4. For filter selections, convert them into clear filter terms:
+        - "I like blue cars" → "blue color"
+        - "Only show me automatics" → "automatic transmission"
+
+        Examples:
+        User: What about ones with better mileage?
+        Chat History: Previously discussing "SUVs under 20 lakhs"
+        Standalone: "SUVs under 20 lakhs with best mileage"
+
+        User: My budget is 15-20 lakhs
+        Standalone: "My budget is 15-20 lakhs" (keep qualification answers unchanged)
+
+        User: I prefer white ones
+        Standalone: "white color"
+
+        Do NOT answer the question, just reformulate it when needed.
+    """
     contextualize_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", retriever_prompt),
@@ -299,61 +315,85 @@ def build_qa_chain(qdrant, groq_api_key=groq_api_key, llm_model=llm_model):
 
 
     # These all for LLM
-    system_prompt = (
-            """
-            You are an expert assistant helping users find cars from structured listings (CSV tables, tabular data, or structured lists).
+    sales_system_prompt = """
+        You are an expert car sales assistant with three key responsibilities:
+        1. Accurately answer questions about available cars
+        2. Qualify leads through strategic questioning
+        3. Guide users toward a purchase decision
 
-            You are given car data as context below.  
-            Your job: accurately answer the user's question by applying all filters mentioned in their query, using ONLY the context provided.
+        ### Conversation Flow Rules:
+        1. Always follow this response structure:
+        - First: Answer the immediate question
+        - Then: Ask ONE relevant follow-up question
 
-            ---
-            Car Data (Context):
-            {context}
-            ---
+        2. Qualification Questions (ask at natural points):
+        • Budget: "What price range are you considering?"
+        • Timeframe: "When are you looking to purchase?"
+        • Current Vehicle: "What car are you driving now?"
+        • Preferences: "Do you prioritize fuel efficiency or power?"
 
-            Instructions:
+        3. Filter Handling:
+        - Strictly apply all mentioned filters
+        - After showing results, offer additional filter options
+        - Never suggest cars that don't match explicit requirements
 
-            Carefully analyze the user’s question for any search/filter requirements, such as:
-            1. Brand (e.g., Maruti, Hyundai)
-            2. Model
-            3. Registration Year
-            3. Price or price range (e.g., 2 to 5 lakhs) with unit
-            4. Number of seats (e.g., 7 seats, 5-seater)
-            5. Year of make (e.g., after 2020, between 2018 and 2023)
-            6. Fuel type (petrol, diesel, electric, etc.)
-            7. Number of seats (e.g., 7 seats, 5-seater)
-            8. Mileage 
-            9. km driven
-            10. Body type (SUV, sedan, hatchback, etc.)
-            11. Color
-            12. Transmission (manual, automatic)
-            13. Insurance
-            14. Engine
-            15. Power
-            16. Location, or any other property present in the data
+        ### Response Examples:
+        User: Show me SUVs under 20 lakhs
+        Bot: Here are 5 SUVs under ₹20L:
+        1. Hyundai Creta (₹18.5L)
+        2. Kia Seltos (₹19.2L)
+        ...
+        Would you like to filter these by color or transmission type?
 
-            * Apply ALL relevant filters simultaneously. For example, if the user asks for "cars with 7 seats made after 2020," only show cars matching both criteria.
-            * Return ALL matching cars in paragraph and in well structured formate.
-            * If the question is about a summary, statistic, or comparison (e.g., "cheapest diesel car after 2020"), answer directly from the context, showing the specific value/car(s) requested.
-            * Never invent, hallucinate, or add data that is not in the context. If nothing matches, say "No matching cars found in the data."
-            * If the user's question is not specific, summarize or show the most relevant information as best you can using the context.
-            * Do not use external knowledge; only use what is in the context.
-            Please answer the user's question as accurately and clearly as possible, using only the information in the context.
-            Given a chat history and the latest user question which might reference context in the chat history.
+        User: I prefer automatics
+        Bot: Here are 3 automatic SUVs under ₹20L:
+        1. Hyundai Creta Automatic (₹19.8L)
+        ...
+        What's your preferred color among these options?
+    """
 
-            User Question: {input}
-            
-            Answer:
-            """
-    )
+    filtering_system_prompt = """
+        ### Filter Management Guidelines:
+        1. When presenting cars, always show:
+        - How many results match current filters
+        - Available filters not yet applied
 
-    QA_prompt = ChatPromptTemplate.from_messages(
-        [
-            ("system", system_prompt),
-            MessagesPlaceholder(variable_name="chat_history"),
-            ("human", "{input}")
-        ]
-    )
+        2. Filter Types to Recognize:
+        - Color: [red, blue, white, black, silver]
+        - Price: [under 10 Lakhs, 10-30 Lakhs, 30-50 Lakhs, 50-70 Lakhs, 70-90 Lakhs, 90 Lakhs+]
+        - Mileage: [<10kmpl, 10-20kmpl, 20-30kmpl, 30-40kmpl, 40+kmpl]
+        - Gear Type: [automatic, manual]
+        - Reverse Camera: [Yes, No]
+        For example:
+            If the user's previous question was about a specific type of car (e.g., Kia cars), 
+            and they now ask something like "I want White color cars from my previous search",
+            then you must filter results only from that previous search context (i.e., only Kia cars).
+            If no cars match the new filter (e.g., no white Kia cars), respond with:
+            "I don't have white Kia cars from your previous search. Do you want anything else? I'm here to help you."
+            Do not show results from outside the previous query scope.
+            Maintain context and be clear if no match is found. 
+            Always base follow-up answers strictly on the last valid search unless otherwise instructed.
+           
+
+        3. Filter Application Rules:
+        - Convert natural language to exact filter terms
+            "I want a blue car" → color=blue
+            "Only automatics" → transmission=automatic
+        - Combine multiple filters with AND logic
+        - When no exact matches, show nearest options with explanation
+    """
+
+
+
+    # Modify your QA_prompt to include this:
+    QA_prompt = ChatPromptTemplate.from_messages([
+        ("system", sales_system_prompt),
+        ("system", filtering_system_prompt),
+        # ("system", "Current active filters: {filters}"),
+        ("system", "Car Data Context:\n{context}"),
+        MessagesPlaceholder(variable_name="chat_history"),
+        ("human", "{input}")
+    ])
 
     QA_chain = create_stuff_documents_chain(llm, QA_prompt)
 
@@ -361,8 +401,8 @@ def build_qa_chain(qdrant, groq_api_key=groq_api_key, llm_model=llm_model):
     # Combine retriever and LLM
     rag_chain = create_retrieval_chain(history_retriever, QA_chain)
 
-
     return rag_chain
+
 
 
 
@@ -380,6 +420,28 @@ async def initialize_qa_chain():
         print("QA Chain initialized successfully.")
     else:
         print("No embedding found. Please embed the document first.")
+
+
+
+PDF_DIR = "chat_pdfs"
+
+def generate_chat_pdf(session_id: str, messages: list):
+    os.makedirs(PDF_DIR, exist_ok=True)
+    filename = f"chat_{session_id[:20]}.pdf"
+    filepath = os.path.join(PDF_DIR, filename)
+
+    doc = SimpleDocTemplate(filepath, pagesize=A4)
+    styles = getSampleStyleSheet()
+    flowables = []
+
+    for m in messages:
+        sender = "User" if "HumanMessage" in str(type(m)) else "Bot"
+        paragraph = Paragraph(f"<b>{sender}:</b> {m.content}", styles["Normal"])
+        flowables.append(paragraph)
+        flowables.append(Spacer(1, 12))
+
+    doc.build(flowables)
+    return filepath
 
 
 class QuestionRequest(BaseModel):
@@ -430,11 +492,8 @@ async def ask_question(data: QuestionRequest):
         {"input": data.question},
         config={"configurable": {"session_id": data.session_id}}
     )
-
-    # Save messages to backend (but don't return to user)
-    # get_session_history(data.session_id).add_user_message(data.question)
-    # get_session_history(data.session_id).add_ai_message(result["answer"])
     print(result["answer"])
+    generate_chat_pdf(data.session_id, get_session_history(data.session_id).messages)
 
     return {"answer": result["answer"]}
   
@@ -443,25 +502,32 @@ class SessionRequest(BaseModel):
 
 @app.post("/refresh")
 async def refresh_chat(Sessiondata: SessionRequest, request: Request):
-    # try:
-    #     body = await request.body()
-    #     if not body:
-    #         raise HTTPException(status_code=400, detail="Empty request body")
-    #     data = await request.json()
-    # except Exception as e:
-    #     raise HTTPException(status_code=400, detail=f"Invalid JSON: {str(e)}")
-    
-    # session_id = data.get("session_id")
-
     session_id = Sessiondata.session_id
     if not session_id:
         raise HTTPException(status_code=400, detail= "Missing session id in request")
     
     if session_id in store:
         del store[session_id]
+        # Delete corresponding PDF
+        pdf_path = os.path.join(PDF_DIR, f"chat_{session_id[:20]}.pdf")
+        if os.path.exists(pdf_path):
+            os.remove(pdf_path)
         return {"message":f"Session {session_id} refresh successfully."}
     else:
         raise HTTPException(status_code=404, detail=f"Session id not found")
+
+
+@app.get("/export_pdf")
+async def export_pdf(session_id: str):
+    if session_id not in store:
+        raise HTTPException(status_code=404, detail="Session not found.")
+    
+    messages = store[session_id].messages
+    filepath = generate_chat_pdf(session_id, messages)
+
+    return FileResponse(filepath, filename=os.path.basename(filepath), media_type='application/pdf')
+
+
 
 
 @app.get("/get_messages")
@@ -479,6 +545,15 @@ async def new_chat():
     new_session_id = str(uuid4())
     store[new_session_id] = ChatMessageHistory()
     return JSONResponse(content={"session_id": new_session_id})
+
+
+
+
+
+
+
+
+
 
 
 #### uvicorn main:app --reload
