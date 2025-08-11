@@ -4,6 +4,13 @@ import './App.css';
 import ReactMarkdown from "react-markdown";
 import { v4 as uuidv4 } from 'uuid';
 
+
+import Box from '@mui/material/Box';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import FormControl from '@mui/material/FormControl';
+import Select from '@mui/material/Select';
+
 const BACKEND_URL = process.env.REACT_APP_API_URL;
 console.log(BACKEND_URL);
 
@@ -15,20 +22,43 @@ export default function App() {
   const [sessions, setSessions] = useState([]);
   const [sessionSummaries, setSessionSummaries] = useState({});
   const [showWelcome, setShowWelcome] = useState(true);
+  const [colour, setColour] = React.useState('');
+  const [price, setPrice] = React.useState('');
+  const [mileage, setMileage] = React.useState('');
+  const [gear, setGear] = React.useState('');
+  const [reverseCamera, setReverseCamera] = React.useState('');
+  const [clearConversation, setClearConversation] = useState(false)
+  // const [newChat, setNewChat] = useState(true)
 
   const sendMessage = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() && !colour && !price && !mileage && !gear && !reverseCamera) return;
     setShowWelcome(false);
+    setClearConversation(false);
+    // setNewChat(true)
 
-    const newMessages = [...messages, { sender: 'user', text: input }];
+    let messageToSend = input.trim();
+
+    // Append dropdown values to message if present
+    if (!messageToSend) {
+      messageToSend = [colour, price, mileage, gear, reverseCamera]
+      .join(". ");
+        // .filter(Boolean)
+    }
+
+    const newMessages = [...messages, { sender: 'user', text: messageToSend  }];
     setMessages(newMessages);
-    setLoading(true);
     setInput('');
+    setColour('');
+    setPrice('');
+    setMileage('');
+    setGear('');
+    setReverseCamera('');
+    setLoading(true);
 
     if (messages.length === 0) {
       setSessionSummaries((prev) => ({
         ...prev,
-        [sessionId]: input.slice(0, 20)
+        [sessionId]: messageToSend.slice(0, 20)
       }));
     }
 
@@ -44,7 +74,7 @@ export default function App() {
 
     try {
       const response = await axios.post(`${BACKEND_URL}/chat`, {
-        question: input,
+        question: messageToSend,
         session_id: sessionId
       });
 
@@ -82,6 +112,12 @@ export default function App() {
   //   }
   // };
 
+
+  const clearChatScreen = () => {
+    setMessages([]);
+    setClearConversation(true);
+  }
+
   const handleDeleteSession = async (id) => {
     try {
       await axios.post(`${BACKEND_URL}/refresh`, { session_id: id });
@@ -117,6 +153,7 @@ export default function App() {
     try {
       const response = await axios.post(`${BACKEND_URL}/new_chat`);
       const newSessionId = response.data.session_id;
+      // setNewChat(false)
       setSessionId(newSessionId);
       setMessages([]);
       setSessions((prev) => [newSessionId, ...prev]);
@@ -156,6 +193,34 @@ export default function App() {
     }
   }, [messages, showWelcome]);
 
+
+
+  const handleChangeColour = (event) => {
+    setColour(event.target.value);
+
+  };
+  console.log(colour)
+
+  const handleChangePrice = (event) => {
+    setPrice(event.target.value);
+  };
+  console.log(price)
+
+  const handleChangeMileage = (event) => {
+    setMileage(event.target.value);
+  };
+  console.log(mileage)
+
+  const handleChangeGear = (event) => {
+    setGear(event.target.value);
+  };
+  console.log(gear)
+
+  const handleChangeReverseCamera = (event) => {
+    setReverseCamera(event.target.value);
+  };
+  console.log(reverseCamera)
+
   return (
     <div className="chat-container">
       <div className="side-bar">
@@ -172,10 +237,21 @@ export default function App() {
             <div key={id} className={`session-item ${id === sessionId ? "active" : ''}`} onClick={() => handleSelectSession(id)}>
               <div className="session-content">
                 {sessionSummaries[id] || "New Chat"}
-                <button className='deleteButton' onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteSession(id);
-                }}>×</button>
+                <div className='sidebar-button'>
+                  <button title='Permanently Delete' className='deleteButton' onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteSession(id);
+                  }}>🗑️</button>
+                  <a
+                    href={`http://localhost:8000/export_pdf?session_id=${id}`}
+                    title="Download Chat PDF"
+                    className="downloadButton"
+                    onClick={(e) => e.stopPropagation()} // prevent triggering session change
+                    download
+                  >
+                    ⬇️
+                  </a>
+                </div>
               </div>
             </div>
           ))}
@@ -187,53 +263,156 @@ export default function App() {
       <div className='main'>
         {showWelcome && messages.length === 0 ? (
           <div className="welcome-screen">
-            <div className="welcome-header">
-              <h1>Welcome to CarGuru AI!</h1>
+            {/* <div className="welcome-header">
+              <h1>CarGuru AI!</h1>
               <p>Ask me anything about cars, or in the – from images recommendations to obtained comparisons!</p>
+            </div> */}
+            <div className="welcome-input-area">
+              <input 
+                type="text"
+                value={input}
+                placeholder="Ask something..."
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              />
+            <button onClick={sendMessage}>Send</button>
             </div>
-            
-            <div className="action-buttons">
-              <button className="action-btn">Get an answer 99 pages</button>
-              <button className="action-btn">Write the information</button>
-              <button className="action-btn">Write a story twice</button>
-              <button className="action-btn">Write an impression online</button>
-            </div>
-            
-            <div className="info-section">
-              <button className="learn-more">Learn More for future...</button>
-            </div>
-            
-            <div className="features-grid">
-              <div className="feature-card">
-                <h3>Three Competitors</h3>
-                <p>Get your own people for $1 billion on results.</p>
-              </div>
-              
-              <div className="feature-card">
-                <h3>Total Efficiency</h3>
-                <p>Choose money and saving costs.</p>
-              </div>
-              
-              <div className="feature-card">
-                <h3>57 Insights</h3>
-                <p>Excites what we expect for our project.</p>
-              </div>
-            </div>
-          </div>
+          </div> 
         ) : (
           <div className='chat-bot'>
+            <div className="input-area">
+              <input 
+                type="text"
+                value={input}
+                placeholder="Ask something..."
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              />
+              <button onClick={sendMessage}>Send</button>
+            </div>
             {messages.map((msg, i) => (
+              <>
               <div key={i} className={`chat-message ${msg.sender === 'bot' ? "bot" : 'user'}`}>
                 <div className='message-bubble'>
                   {msg.sender === 'user' ? (
                     <p>{msg.text}</p>
                   ) : (
-                    <ReactMarkdown>{msg.text}</ReactMarkdown>
+                    <>
+                    <ReactMarkdown>{msg.text}
+                    </ReactMarkdown>
+                    </>
                   )}
                 </div>
               </div>
+            </>
             ))}
+            {(!loading && !clearConversation) && (<div className="dropdown-buttons-container">
+              <p>Would you like to further filter your answers by the following categories? </p>
+            <div className='categories-options-dropdown'>
+              {/* <div className='first-three-categories'> */}
+            <Box sx={{ minWidth: 170 }}>
+              <FormControl fullWidth>
+                <InputLabel id="demo-simple-select-label">Colour </InputLabel>
+                <Select
+                  labelId="demo-simple-select-label"
+                  id="demo-simple-select"
+                  value={colour}
+                  label="Colour"
+                  onChange={handleChangeColour}
+                >
+                  <MenuItem value={"I want Red color cars from my previous search"}>Red</MenuItem>
+                  <MenuItem value={"I want Blue color cars from my previous search"}>Blue</MenuItem>
+                  <MenuItem value={"I want White color cars from my previous search"}>White</MenuItem>
+                  <MenuItem value={"I want Black color cars from my previous search"}>Black</MenuItem>
+                  <MenuItem value={"I want Silver color cars from my previous search"}>Silver</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
 
+            <Box sx={{ minWidth: 170 }}>
+              <FormControl fullWidth>
+                <InputLabel id="demo-simple-select-label">Price Range </InputLabel>
+                <Select
+                  labelId="demo-simple-select-label"
+                  id="demo-simple-select"
+                  value={price}
+                  label="Price Range"
+                  onChange={handleChangePrice}
+                >
+                  <MenuItem value={"I want cars under 10 lakhs from my previous search"}>Under 10 Lakhs</MenuItem>
+                  <MenuItem value={"I want cars between 10 to 30 lakhs from my previous search"}>10-30 Lakhs</MenuItem>
+                  <MenuItem value={"I want cars between 30 to 50 lakhs from my previous search"}>30-50 Lakhs</MenuItem>
+                  <MenuItem value={"I want cars between 50 to 70 lakhs from my previous search"}>50-70 Lakhs</MenuItem>
+                  <MenuItem value={"I want cars between 70 to 90 lakhs from my previous search"}>70-90 Lakhs</MenuItem>
+                  <MenuItem value={"I want cars above 90 lakhs from my previous search"}>Above 90 Lakhs</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+
+            <Box sx={{ minWidth: 170 }}>
+              <FormControl fullWidth>
+                <InputLabel id="demo-simple-select-label">Mileage </InputLabel>
+                <Select
+                  labelId="demo-simple-select-label"
+                  id="demo-simple-select"
+                  value={mileage}
+                  label="Mileage"
+                  onChange={handleChangeMileage}
+                >
+                  <MenuItem value={"I want cars under 10 kmpl mileage from my previous search"}>Under 10 kmpl</MenuItem>
+                  <MenuItem value={"I want cars between 10 to 20 kmpl mileage from my previous search"}>10-20 kmpl</MenuItem>
+                  <MenuItem value={"I want cars between 20 to 30 kmpl mileage from my previous search"}>20-30 kmpl</MenuItem>
+                  <MenuItem value={"I want cars between 30 to 40 kmpl mileage from my previous search"}>30-40 kmpl</MenuItem>
+                  <MenuItem value={"I want cars above 40 kmpl mileage from my previous search"}>Above 40 kmpl</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+            {/* </div>
+            <div className='last-categories'> */}
+            <Box sx={{ minWidth: 170 }}>
+              <FormControl fullWidth>
+                <InputLabel id="demo-simple-select-label">Gear Type </InputLabel>
+                <Select
+                  labelId="demo-simple-select-label"
+                  id="demo-simple-select"
+                  value={gear}
+                  label="Gear Type"
+                  onChange={handleChangeGear}
+                >
+                  <MenuItem value={"I want cars which have gear type automatic from my previous search"}>Automatic</MenuItem>
+                  <MenuItem value={"I want cars which have gear type manual from my previous search"}>Manual</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+
+            
+            <Box sx={{ minWidth: 170 }}>
+              <FormControl fullWidth>
+                <InputLabel id="demo-simple-select-label">Reverse Camera </InputLabel>
+                <Select
+                  labelId="demo-simple-select-label"
+                  id="demo-simple-select"
+                  value={reverseCamera}
+                  label="Reverse Camera"
+                  onChange={handleChangeReverseCamera}
+                >
+                  <MenuItem value={"I want cars which have Reverse Camera from my previous search"}>Yes</MenuItem>
+                  <MenuItem value={"I want cars which don't have Reverse Camera from my previous search"}>No</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+            {/* </div> */}
+            </div>
+            <div className='categories-submit-btn'>
+              <button 
+              type="submit" 
+              className="submit-btn"
+              onClick={sendMessage}
+              >
+                ➤
+              </button>
+            </div>
+            </div>)}
             {loading && (
               <div className="loading-indicator">
                 <div className="loading-dot"></div>
@@ -241,16 +420,21 @@ export default function App() {
                 <div className="loading-dot"></div>
               </div>
             )}
-            
-            {/* {messages.length > 0 && (
+            {(messages.length > 0 && !loading )&& (
               <div className='refresh'>
-                <button className='refresh-button' onClick={handleRefresh}>Clear Conversation</button>
+                <button 
+                className='refresh-button' 
+                title='Do you want to clean the chat window.' 
+                onClick={clearChatScreen}
+                >
+                  Clear Conversation
+                </button>
               </div>
-            )} */}
+            )}
           </div>
         )}
         
-        <div className="input-area">
+        {/* <div className="input-area">
           <input 
             type="text"
             value={input}
@@ -259,7 +443,7 @@ export default function App() {
             onKeyDown={(e) => e.key === "Enter" && sendMessage()}
           />
           <button onClick={sendMessage}>Send</button>
-        </div>
+        </div> */}
       </div>
     </div>
   );
